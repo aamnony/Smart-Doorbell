@@ -1,0 +1,52 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+
+    defaultConfig {
+        applicationId "com.amazonaws.demo.androidpubsub"
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'x86'
+        }
+
+        packagingOptions {
+            // The project react-native does not provide 64-bit binaries at the
+            // time of this writing. Unfortunately, packaging any 64-bit
+            // binaries into the .apk will crash the app at runtime on 64-bit
+            // platforms.
+            exclude '/lib/mips64/**'
+            exclude '/lib/arm64-v8a/**'
+            exclude '/lib/x86_64/**'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:design:28.0.0'
+    implementation 'com.amazonaws:aws-android-sdk-iot:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-auth-userpools:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-mobile-client:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.8.+'
+    implementation('org.jitsi.react:jitsi-meet-sdk:+') { transitive = true }
+
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+}
