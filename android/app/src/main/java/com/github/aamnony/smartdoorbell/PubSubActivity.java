@@ -1,18 +1,15 @@
 package com.github.aamnony.smartdoorbell;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobile.client.AWSStartupHandler;
-import com.amazonaws.mobile.client.AWSStartupResult;
 import com.amazonaws.mobile.client.Callback;
 import com.amazonaws.mobile.client.UserStateDetails;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
@@ -20,23 +17,21 @@ import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMappingE
 import com.amazonaws.mobileconnectors.iot.AWSIotKeystoreHelper;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttLastWillAndTestament;
+import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
+import com.amazonaws.mobileconnectors.iot.AWSIotMqttNewMessageCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.iot.AWSIotClient;
-import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
-import com.amazonaws.mobileconnectors.iot.AWSIotMqttNewMessageCallback;
-import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
 import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
-
 
 import java.io.UnsupportedEncodingException;
 import java.security.KeyStore;
 import java.util.UUID;
 
-public class PubSubActivity extends Activity {
+public class PubSubActivity extends AppCompatActivity {
 
     private static final String TAG = PubSubActivity.class.getCanonicalName();
 

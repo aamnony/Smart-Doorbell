@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="3dp" >
+    android:padding="3dp">
+
+    <android.support.v7.widget.Toolbar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:title="@string/app_name" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
@@ -29,7 +35,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
@@ -50,13 +56,13 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btnConnect"
-            android:layout_gravity="left"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_gravity="left"
             android:layout_weight="6"
             android:text="Connect" />
 
@@ -64,23 +70,23 @@
             android:id="@+id/btnDisconnect"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="4"
             android:layout_gravity="right"
+            android:layout_weight="4"
             android:text="Disconnect" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <EditText
             android:id="@+id/txtSubcribe"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="5"
-            android:hint="Topic name"
-            android:gravity="center_vertical" />
+            android:gravity="center_vertical"
+            android:hint="Topic name" />
 
         <Button
             android:id="@+id/btnSubscribe"
@@ -93,7 +99,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
@@ -114,7 +120,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
@@ -135,7 +141,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
@@ -158,6 +164,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="left"
         android:text="Publish" />
+
     <Button
         android:id="@+id/btnLoadItem"
         android:layout_width="match_parent"
