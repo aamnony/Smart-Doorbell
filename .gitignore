@@ -52,3 +52,4 @@ awsconfiguration.json
 *.pem
 rootkey.csv
 fcm.json
+android/app/src/main/java/com/github/aamnony/smartdoorbell/AppHelper.java
