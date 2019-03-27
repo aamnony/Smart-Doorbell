@@ -46,6 +46,7 @@ dependencies {
     implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.8.+'
     implementation 'com.amazonaws:aws-android-sdk-mobile-client:2.8.+'
     implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.8.+'
     implementation('org.jitsi.react:jitsi-meet-sdk:+') { transitive = true }
 
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
