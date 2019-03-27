@@ -18,7 +18,7 @@ def send_to_topic(topic: str) -> None:
 
 
 if __name__ == '__main__':
-	cred = firebase_admin.credentials.Certificate('../fcm.json')
-	default_app = firebase_admin.initialize_app(cred)
+    cred = firebase_admin.credentials.Certificate('../fcm.json')
+    default_app = firebase_admin.initialize_app(cred)
 
-	send_to_topic('nssl')
+    send_to_topic('nssl')
