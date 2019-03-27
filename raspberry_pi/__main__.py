@@ -7,11 +7,14 @@ import firebase_admin.credentials
 import firebase_admin.messaging
 
 
-BUCKET_NAME = 'smartdoorbellfaces'
 USER_NAME = 'nssl'
+CAMERA_NAME = 'frontdoor'
+
+BUCKET_NAME = 'smartdoorbellfaces'
 FCM_CONFIG_PATH = 'fcm.json'
-RECOGNIZED_FACES_BUCKET_FOLDER = USER_NAME + '/recognized/'
-LOG_FACES_BUCKET_FOLDER = USER_NAME + '/log/'
+ROOT_BUCKET_FOLDER = USER_NAME + '/' + CAMERA_NAME
+RECOGNIZED_FACES_BUCKET_FOLDER = ROOT_BUCKET_FOLDER + '/recognized/'
+LOG_FACES_BUCKET_FOLDER = ROOT_BUCKET_FOLDER + '/log/'
 IMAGE_EXTENSION = 'jpg'
     
 
@@ -19,6 +22,7 @@ def publish_message(image_name: str) -> None:
     message = firebase_admin.messaging.Message(
         data={
             'image_name': image_name,
+            'camera_name': CAMERA_NAME,
         },
         topic=USER_NAME,
     )
@@ -42,10 +46,11 @@ def debug_create_local_image(local_path: str):
 fcm_credentials = firebase_admin.credentials.Certificate(FCM_CONFIG_PATH)
 fcm_app = firebase_admin.initialize_app(fcm_credentials)
 
-local_path = '{timestamp}.{ext}'.format(timestamp=time.time(), ext=IMAGE_EXTENSION)
-image_name = LOG_FACES_BUCKET_FOLDER + local_path
+local_path = str(time.time()) + '.' + IMAGE_EXTENSION
+# image_name = LOG_FACES_BUCKET_FOLDER + local_path
+image_name = LOG_FACES_BUCKET_FOLDER + '1553703251.4841993.jpg'
 
-debug_create_local_image(local_path) # TODO: Temporary, remove.
+# debug_create_local_image(local_path) # TODO: Temporary, remove.
 
-upload_image(BUCKET_NAME, local_path, image_name)
+# upload_image(local_path, image_name)
 publish_message(image_name)
