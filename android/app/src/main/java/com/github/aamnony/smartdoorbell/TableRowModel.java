@@ -5,36 +5,59 @@ import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBRangeKey;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 
-@DynamoDBTable(tableName = "TestTable")
+@DynamoDBTable(tableName = "SmartDoorbellLogTable")
 public class TableRowModel {
-    private String personId;
-    private String age;
+    private String personName;
+    private int timeStamp;
+    private String actionType;
+    private String snapshotId;
+    private String userCamera;
 
-    @DynamoDBHashKey(attributeName = "PersonId")
-    @DynamoDBAttribute(attributeName = "PersonId")
-    public String getPersonId() {
-        return personId;
+    @DynamoDBAttribute(attributeName = "User/Camera")
+    @DynamoDBHashKey(attributeName = "User/Camera")
+    public String getUserCamera() {
+        return userCamera;
     }
 
-    public void setPersonId(String personId) {
-        this.personId = personId;
+    public void setUserCamera(String userCamera) {
+        this.userCamera = userCamera;
     }
 
-    //    @DynamoDBRangeKey(attributeName = "Age")
-    @DynamoDBAttribute(attributeName = "Age")
-    public String getAge() {
-        return age;
+    @DynamoDBAttribute(attributeName = "PersonName")
+    public String getPersonName() {
+        return personName;
     }
 
-    public void setAge(String age) {
-        this.age = age;
+    public void setPersonName(String personName) {
+        this.personName = personName;
     }
 
-    @Override
-    public String toString() {
-        return "TableRowModel{" + "\n" +
-                "personId='" + personId + '\'' + "\n" +
-                "age='" + age + '\'' + "\n" +
-                '}';
+    @DynamoDBAttribute(attributeName = "TimeStamp")
+    public int getTimeStamp() {
+        return timeStamp;
     }
+
+    public void setTimeStamp(int timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+
+    @DynamoDBAttribute(attributeName = "ActionType")
+    public String getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(String actionType) {
+        this.actionType = actionType;
+    }
+
+    @DynamoDBAttribute(attributeName = "SnapshotId")
+    public String getSnapshotId() {
+        return snapshotId;
+    }
+
+    public void setSnapshotId(String snapshotId) {
+        this.snapshotId = snapshotId;
+    }
+
+
 }

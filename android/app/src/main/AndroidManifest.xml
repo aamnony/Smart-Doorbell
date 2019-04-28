@@ -20,6 +20,12 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".MessagesActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".LogActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".PubSubActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity

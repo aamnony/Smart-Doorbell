@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Smart Doorbell</string>
+    <string name="title_activity_log">Log</string>
+    <string name="title_activity_messages">Messages</string>
 </resources>
