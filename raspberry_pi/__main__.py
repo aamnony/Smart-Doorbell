@@ -45,10 +45,12 @@ def log(*values: any, level: int = LOG_LEVEL) -> None:
 
 class Messaging:
     @staticmethod
-    def publish_message(image_name: str) -> None:
+    def init_fcm():
         fcm_credentials = firebase_admin.credentials.Certificate(FCM_CONFIG_PATH)
         fcm_app = firebase_admin.initialize_app(fcm_credentials)
 
+    @staticmethod
+    def publish_message(image_name: str) -> None:
         message = firebase_admin.messaging.Message(
             data={
                 'image_name': image_name,
@@ -224,16 +226,7 @@ class StateMachine:
 
                 if FaceRecognition.is_face_recognized(image_name):
                     Door.unlock()
-                elif False:  # TODO
-                    
-
-                    local_path = str(time.time()) + IMAGE_EXTENSION
-                    # image_name = LOG_FACES_BUCKET_FOLDER + local_path
-                    image_name = LOG_FACES_BUCKET_FOLDER + '1553703251.4841993.jpg'
-
-                    # debug_create_local_image(local_path) # TODO: Temporary, remove.
-
-                    # FaceRecognition.upload_image(local_path, image_name)
+                else:
                     Messaging.publish_message(image_name)
 
                 self.camera.open(0)
