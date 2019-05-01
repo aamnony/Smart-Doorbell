@@ -20,6 +20,7 @@ CAMERA_NAME                 = 'frontdoor'
 SHOW_CAMERA_WINDOW          = True
 DEFAULT_UNLOCK_DURATION     = 5
 STREAM_KEEP_ALIVE_TIMEOUT   = 5
+FRAMES_WITH_FACES_THRESHOLD = 10
 LOG_LEVEL                   = 1  # Lower value means more verbose messages will be displayed
 
 # Framework Parameters:
@@ -150,6 +151,7 @@ class StateMachine:
         self.received_stream_request = False
         self.received_open_request = False
         self.last_stream_request_time = 0
+        self.frames_with_faces = 0
 
         self.camera = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier('/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml')
@@ -171,6 +173,7 @@ class StateMachine:
 
     def goto_face_detecting(self) -> None:
         self.state = self.FACE_DETECTING
+        self.frames_with_faces = 0
         if not self.camera.isOpened():
             self.camera.open(0)
 
@@ -215,7 +218,13 @@ class StateMachine:
                 cv2.imshow('camera', image)
 
             if len(faces) > 0:
-                log('Face detected')
+                self.frames_with_faces += 1
+                log('Face detected', level=0)
+            else:
+                self.frames_with_faces = 0
+
+            if self.frames_with_faces >= FRAMES_WITH_FACES_THRESHOLD:
+                log('Face detected on ', self.frames_with_faces, ' consecutive frames')
                 _, encoded_image = cv2.imencode(IMAGE_EXTENSION, image)
 
                 image_bytes = encoded_image.tobytes()
@@ -230,6 +239,7 @@ class StateMachine:
                     Messaging.publish_message(image_name)
 
                 self.camera.open(0)
+                self.frames_with_faces = 0
 
 
 
