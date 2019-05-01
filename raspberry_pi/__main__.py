@@ -1,3 +1,4 @@
+import subprocess
 import time
 
 import AWSIoTPythonSDK
@@ -13,15 +14,19 @@ import firebase_admin
 import firebase_admin.credentials
 import firebase_admin.messaging
 
+import gi
+gi.require_version('Wnck','3.0')
+from gi.repository import Wnck
+
 
 # Device Parameters:
 USER_NAME                   = 'nssl'
 CAMERA_NAME                 = 'frontdoor'
 SHOW_CAMERA_WINDOW          = True
 DEFAULT_UNLOCK_DURATION     = 5
-STREAM_KEEP_ALIVE_TIMEOUT   = 5
+STREAM_KEEP_ALIVE_TIMEOUT   = 10
 FRAMES_WITH_FACES_THRESHOLD = 10
-LOG_LEVEL                   = 1  # Lower value means more verbose messages will be displayed
+LOG_LEVEL                   = 2  # Lower value means more verbose messages will be displayed
 
 # Framework Parameters:
 BUCKET_NAME                     = 'smartdoorbellfaces'
@@ -35,6 +40,8 @@ MQTT_ENDPOINT                   = 'a18gejfspwq80u.iot.us-east-1.amazonaws.com'
 MQTT_ROOT_CERTIFICATE_PATH      = 'root-CA.crt'
 MQTT_PRIVATE_KEY_PATH           = 'ab6bcc17f5-private.pem.key'
 MQTT_CERTIFICATE_PATH           = 'ab6bcc17f5-certificate.pem.crt'
+STREAM_SERVER_URL               = 'https://www.smartdoorbell.ga/'
+ROOM_URL                        = STREAM_SERVER_URL + USER_NAME + CAMERA_NAME
 ACTION_UNLOCK_DOOR              = 'open'
 ACTION_STREAM                   = 'stream'
 
@@ -43,6 +50,34 @@ def log(*values: any, level: int = LOG_LEVEL) -> None:
     if level >= LOG_LEVEL:
         print('<', USER_NAME, '/', CAMERA_NAME, '> ', *values, sep='', flush=True)
 
+
+class ChromiumBrowser:
+    def __init__(self):
+        self.process = None
+        self.launch_time = 6
+
+    def open_room(self) -> None:
+        if self.process is not None:
+            raise RuntimeError('Chromium Browser is already opened')
+
+        # https://stackoverflow.com/questions/45426203/minimize-window-with-python
+        self.process = subprocess.Popen(['chromium-browser', '--window-size=10,10', ROOM_URL], shell=False)
+
+        screen = Wnck.Screen.get_default()
+        time.sleep(self.launch_time)
+        screen.force_update()
+        windows = screen.get_windows()
+        for w in windows:
+            #if 'chromium' in w.get_name().lower():
+            if self.process.pid == w.get_pid():
+                w.minimize()
+        log('Opened room ', level=0)
+
+    def close_room(self) -> None:
+        self.process.kill()
+        self.process.wait()
+        self.process = None
+        log('Closed room ', level=0)
 
 class Messaging:
     @staticmethod
@@ -153,10 +188,13 @@ class StateMachine:
         self.last_stream_request_time = 0
         self.frames_with_faces = 0
 
+        self.chromium_browser = ChromiumBrowser()
+        
         self.camera = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier('/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml')
 
         self.mqtt_client = Messaging.get_mqtt_client()
+        Messaging.init_fcm()
 
     def run(self) -> None:
         if SHOW_CAMERA_WINDOW:
@@ -172,20 +210,24 @@ class StateMachine:
         self.mqtt_client.disconnect()
 
     def goto_face_detecting(self) -> None:
+        log('Start face detecting', level=2)
         self.state = self.FACE_DETECTING
         self.frames_with_faces = 0
         if not self.camera.isOpened():
             self.camera.open(0)
+            log('Opened camera', level=0)
 
     def goto_streaming(self) -> None:
+        log('Start streaming', level=2)
         self.state = self.STREAMING
         if self.camera.isOpened():
             self.camera.release()
-        # TODO: open room in browser
+            log('Closed camera', level=0)
+        self.chromium_browser.open_room()
 
     def on_message_received(self, client, userdata, message) -> None:
         action = str(message.payload.decode('utf-8'))
-        log(action)
+        log(action, level=1)
         if action == ACTION_UNLOCK_DOOR:
             self.received_open_request = True
         elif action == ACTION_STREAM:
@@ -195,12 +237,13 @@ class StateMachine:
     def step(self) -> None:
         if self.received_open_request:
             self.received_open_request = False
-            self.door.unlock()
-            self.goto_face_detecting(self)
+            Door.unlock()
+            self.goto_face_detecting()
 
         elif self.state == self.STREAMING:
-            if time.time() - self.last_stream_request_time < STREAM_KEEP_ALIVE_TIMEOUT:
+            if time.time() - self.last_stream_request_time > STREAM_KEEP_ALIVE_TIMEOUT:
                 # Stream was closed by user.
+                self.chromium_browser.close_room()
                 self.received_stream_request = False
                 self.goto_face_detecting()
 
@@ -224,7 +267,7 @@ class StateMachine:
                 self.frames_with_faces = 0
 
             if self.frames_with_faces >= FRAMES_WITH_FACES_THRESHOLD:
-                log('Face detected on ', self.frames_with_faces, ' consecutive frames')
+                log('Face detected on ', self.frames_with_faces, ' consecutive frames', level=1)
                 _, encoded_image = cv2.imencode(IMAGE_EXTENSION, image)
 
                 image_bytes = encoded_image.tobytes()
