@@ -150,6 +150,33 @@ class FaceRecognition:
             log('Unrecognized')
             return False  # False-positive: no faces detected in image.
 
+    @staticmethod
+    def index_face(person_name: str, log_image_name: str) -> None:
+        recognized_image_name =  RECOGNIZED_FACES_BUCKET_FOLDER + person_name + IMAGE_EXTENSION
+        log('Copying image from bucket/', log_image_name, ' to bucket/', recognized_image_name, level=1)
+        s3 = boto3.client('s3')
+        s3.copy_object(
+            Bucket=BUCKET_NAME,
+            CopySource={
+                'Bucket': BUCKET_NAME,
+                'Key': log_image_name,
+            },
+            Key=recognized_image_name
+        )
+        
+        log('Indexing face from bucket/', recognized_image_name, level=1)
+        response = rekognition.index_faces(
+                CollectionId=REKOGNITION_COLLECTION_ID,
+                Image={
+                    'S3Object': {
+                        'Bucket': BUCKET_NAME,
+                        'Name': recognized_image_name,
+                    }
+                },
+                ExternalImageId=person_name,
+                MaxFaces=1
+            )
+
 
 class Door:
     @classmethod
@@ -189,7 +216,7 @@ class StateMachine:
         self.frames_with_faces = 0
 
         self.chromium_browser = ChromiumBrowser()
-        
+
         self.camera = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier('/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml')
 
@@ -228,9 +255,12 @@ class StateMachine:
     def on_message_received(self, client, userdata, message) -> None:
         action = str(message.payload.decode('utf-8'))
         log(action, level=1)
-        if action == ACTION_UNLOCK_DOOR:
+        action = action.split()
+        if action[0] == ACTION_UNLOCK_DOOR:
             self.received_open_request = True
-        elif action == ACTION_STREAM:
+            if len(action) == 3:
+                FaceRecognition.index_face(action[1], action[2])
+        elif action[0] == ACTION_STREAM:
             self.received_stream_request = True
             self.last_stream_request_time = time.time()
 
