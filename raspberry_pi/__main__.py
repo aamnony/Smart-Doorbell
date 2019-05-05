@@ -1,5 +1,6 @@
 import subprocess
 import time
+import typing
 
 import AWSIoTPythonSDK
 import AWSIoTPythonSDK.MQTTLib
@@ -42,8 +43,10 @@ MQTT_PRIVATE_KEY_PATH           = 'ab6bcc17f5-private.pem.key'
 MQTT_CERTIFICATE_PATH           = 'ab6bcc17f5-certificate.pem.crt'
 STREAM_SERVER_URL               = 'https://www.smartdoorbell.ga/'
 ROOM_URL                        = STREAM_SERVER_URL + USER_NAME + CAMERA_NAME
+DB_LOG_TABLE_NAME               = 'SmartDoorbellLogTable'
 ACTION_UNLOCK_DOOR              = 'open'
 ACTION_STREAM                   = 'stream'
+ACTION_INDEX_FACE               = 'index face'
 
 
 def log(*values: any, level: int = LOG_LEVEL) -> None:
@@ -124,7 +127,7 @@ class FaceRecognition:
         )
 
     @staticmethod
-    def is_face_recognized(image_name: str) -> bool:
+    def get_person_name(image_name: str) -> typing.Union[str, None]:
         log('Running rekognition on image from bucket/', image_name, level=1)
         rekognition = boto3.client('rekognition')
         try:
@@ -141,14 +144,15 @@ class FaceRecognition:
 
             if len(response['FaceMatches']) > 0:
                 log(response, level=0)
-                log('Recognized! It is ', response['FaceMatches'][0]['Face']['ExternalImageId'])
-                return True
+                person_name = response['FaceMatches'][0]['Face']['ExternalImageId']
+                log('Recognized! It is ', person_name)
+                return person_name
             else:
                 log('Unrecognized')
-                return False
+                return None
         except botocore.exceptions.ClientError:
             log('Unrecognized')
-            return False  # False-positive: no faces detected in image.
+            return None  # False-positive: no faces detected in image.
 
     @staticmethod
     def index_face(person_name: str, log_image_name: str) -> None:
@@ -176,6 +180,32 @@ class FaceRecognition:
                 ExternalImageId=person_name,
                 MaxFaces=1
             )
+
+class Db:
+    @staticmethod
+    def log_action(action_type: str, person_name: str = 'null', image_name: str = 'null') -> None:
+        log(f'Logging action: "{action_type}"', level=1)
+        dynamodb = boto3.client('dynamodb')
+        item = dynamodb.put_item(
+            TableName=DB_LOG_TABLE_NAME,
+            Item={
+                'User/Camera': {
+                    'S': USER_NAME + '/' + CAMERA_NAME
+                },
+                'Timestamp': {
+                    'N': str(time.time())
+                },
+                'ActionType': {
+                    'S': action_type
+                },
+                'PersonName': {
+                    'S': person_name
+                },
+                'SnapshotId': {
+                    'S': image_name
+                }
+            }
+        )
 
 
 class Door:
@@ -246,6 +276,7 @@ class StateMachine:
 
     def goto_streaming(self) -> None:
         log('Start streaming', level=2)
+        Db.log_action(ACTION_STREAM)
         self.state = self.STREAMING
         if self.camera.isOpened():
             self.camera.release()
@@ -260,6 +291,7 @@ class StateMachine:
             self.received_open_request = True
             if len(action) == 3:
                 FaceRecognition.index_face(action[1], action[2])
+                Db.log_action(ACTION_INDEX_FACE, action[1], action[2])
         elif action[0] == ACTION_STREAM:
             self.received_stream_request = True
             self.last_stream_request_time = time.time()
@@ -267,6 +299,7 @@ class StateMachine:
     def step(self) -> None:
         if self.received_open_request:
             self.received_open_request = False
+            Db.log_action(ACTION_UNLOCK_DOOR)
             Door.unlock()
             self.goto_face_detecting()
 
@@ -305,8 +338,10 @@ class StateMachine:
                 FaceRecognition.upload_image(image_bytes, image_name)
 
                 self.camera.release()
-
-                if FaceRecognition.is_face_recognized(image_name):
+                
+                person_name = FaceRecognition.get_person_name(image_name)
+                if person_name is not None:
+                    Db.log_action(ACTION_UNLOCK_DOOR, person_name, image_name)
                     Door.unlock()
                 else:
                     Messaging.publish_message(image_name)
