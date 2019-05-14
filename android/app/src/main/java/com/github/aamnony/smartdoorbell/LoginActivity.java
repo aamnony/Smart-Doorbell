@@ -95,7 +95,7 @@ public class LoginActivity extends AppCompatActivity {
                     Log.d(TAG, "Sign-in callback state: " + signInResult.getSignInState());
                     switch (signInResult.getSignInState()) {
                         case DONE:
-                            startPubSubActivity();
+                            startMenuActivity();
                             break;
                         case SMS_MFA:
 //                          makeToast("Please confirm sign-in with SMS.");
@@ -139,15 +139,15 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    private void startPubSubActivity() {
+    private void startMenuActivity() {
         FirebaseMessaging.getInstance().subscribeToTopic(editUsername.getText().toString())
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful()) {
                         Toast.makeText(LoginActivity.this, "Failed subscribing to FCM", Toast.LENGTH_SHORT).show();
                     }
                 });
-        Intent pubSubIntent = new Intent(LoginActivity.this, PubSubActivity.class);
-        startActivity(pubSubIntent);
+        Intent MenuIntent = new Intent(LoginActivity.this, MenuActivity.class);
+        startActivity(MenuIntent);
     }
 
     private void findCurrent() {
@@ -181,7 +181,7 @@ public class LoginActivity extends AppCompatActivity {
 //            Log.d(TAG, " -- Auth Success");
 //            AppHelper.setCurrSession(cognitoUserSession);
 //            AppHelper.newDevice(device);
-            startPubSubActivity();
+            startMenuActivity();
         }
 
         @Override

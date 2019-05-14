@@ -2,16 +2,16 @@ package com.github.aamnony.smartdoorbell;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBRangeKey;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 
 @DynamoDBTable(tableName = "SmartDoorbellLogTable")
 public class TableRowModel {
     private String personName;
-    private int timeStamp;
+    private Double timeStamp;
     private String actionType;
     private String snapshotId;
     private String userCamera;
+    private String snapshotTempUrl;
 
     @DynamoDBAttribute(attributeName = "User/Camera")
     @DynamoDBHashKey(attributeName = "User/Camera")
@@ -32,12 +32,10 @@ public class TableRowModel {
         this.personName = personName;
     }
 
-    @DynamoDBAttribute(attributeName = "TimeStamp")
-    public int getTimeStamp() {
-        return timeStamp;
-    }
+    @DynamoDBAttribute(attributeName = "Timestamp")
+    public Double getTimeStamp() {return timeStamp;}
 
-    public void setTimeStamp(int timeStamp) {
+    public void setTimeStamp(Double timeStamp) {
         this.timeStamp = timeStamp;
     }
 
@@ -60,4 +58,11 @@ public class TableRowModel {
     }
 
 
+    public String getSnapshotTempUrl() {
+        return snapshotTempUrl;
+    }
+
+    public void setSnapshotTempUrl(String snapshotTempUrl) {
+        this.snapshotTempUrl = snapshotTempUrl;
+    }
 }

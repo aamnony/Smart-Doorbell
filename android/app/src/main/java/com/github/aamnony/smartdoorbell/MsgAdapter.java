@@ -9,10 +9,17 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class MsgAdapter extends BaseAdapter {
     private final Context mContext;
     LayoutInflater mInflater;
     private final TableRowModel[] mTableRows;
+    public static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ENGLISH);
 
     MsgAdapter(Context context, TableRowModel[] tableRows) {
         mContext = context;
@@ -54,7 +61,15 @@ public class MsgAdapter extends BaseAdapter {
         TableRowModel item = getItem(position);
         holder.personName.setText(item.getPersonName());
         holder.actionType.setText(item.getActionType());
-        holder.timestamp.setText(String.valueOf(item.getTimeStamp()));
+        //holder.timestamp.setText(String.valueOf(item.getTimeStamp()));
+
+//        int date1 =  item.getTimeStamp();
+        Date dt = new Date((long)(item.getTimeStamp()*1000));
+        holder.timestamp.setText(FORMAT.format(dt));
+
+        if (item.getSnapshotTempUrl() != null) {
+            Picasso.get().load(item.getSnapshotTempUrl()).into(holder.snapshot);
+        }
 
         return convertView;
     }

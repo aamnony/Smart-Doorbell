@@ -1,13 +1,17 @@
 package com.github.aamnony.smartdoorbell;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.mobileconnectors.iot.AWSIotKeystoreHelper;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttLastWillAndTestament;
@@ -30,7 +34,6 @@ public class MessagesActivity extends AppCompatActivity {
     private Button btnReject;
     private Button btnVideo;
 
-
     private AWSIotClient mIotAndroidClient;
     private AWSIotMqttManager mqttManager;
     private String clientId;
@@ -48,7 +51,6 @@ public class MessagesActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messages);
-
 
         btnAccept = findViewById(R.id.btnAccept);
         btnAccept.setOnClickListener(AcceptClick);
@@ -150,85 +152,71 @@ public class MessagesActivity extends AppCompatActivity {
         }
     }
 
+    private void sendMqttMessage(String topic, String command, String... args) {
+        if (args.length>0 && command== "Open")
+            command += " "+args[0] + " "+args[1];
+        String sendCommand = command;
+        try {
+//                mqttManager.connect(AWSMobileClient.getInstance(), new AWSIotMqttClientStatusCallback() { // Doesn't work, stuck on reconnecting
+            mqttManager.connect(clientKeyStore, new AWSIotMqttClientStatusCallback() {
+                @Override
+                public void onStatusChanged(final AWSIotMqttClientStatus status,
+                                            final Throwable throwable) {
+                    Log.d(TAG, "Status = " + String.valueOf(status));
+                    if (status == AWSIotMqttClientStatus.Connected) {
+                        mqttManager.publishString(sendCommand, topic, AWSIotMqttQos.QOS0, new AWSIotMqttMessageDeliveryCallback() {
+                            @Override
+                            public void statusChanged(MessageDeliveryStatus status, Object userData) {
+                                switch (status) {
+                                    case Success:
+                                        try {
+                                            mqttManager.disconnect();
+                                        } catch (Exception e) {
+                                            Log.e(TAG, "Disconnect error.", e);
+                                        }
+                                        break;
+                                    case Fail:
+                                        Log.e(TAG, "Publish error.");
+                                        break;
+                                }
+                            }
+                        }, null);
+                    }
+                }
+            });
+
+        } catch (final Exception e) {
+            Log.e(TAG, "Connection error.", e);
+        }
+    }
+
     private View.OnClickListener AcceptClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             final String topic = "nssl";
             final String msg = "Open";
-            //open connection
-            try {
-//                mqttManager.connect(AWSMobileClient.getInstance(), new AWSIotMqttClientStatusCallback() { // Doesn't work, stuck on reconnecting
-                mqttManager.connect(clientKeyStore, new AWSIotMqttClientStatusCallback() {
-                    @Override
-                    public void onStatusChanged(final AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus status,
-                                                final Throwable throwable) {
-                        Log.d(TAG, "Status = " + String.valueOf(status));
-                        if (status == AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.Connected) {
-                            mqttManager.publishString(msg, topic, AWSIotMqttQos.QOS0, new AWSIotMqttMessageDeliveryCallback() {
-                                @Override
-                                public void statusChanged(MessageDeliveryStatus status, Object userData) {
-                                    switch (status) {
-                                        case Success:
-                                            try {
-                                                mqttManager.disconnect();
-                                            } catch (Exception e) {
-                                                Log.e(TAG, "Disconnect error.", e);
-                                            }
-                                            break;
-                                        case Fail:
-                                            Log.e(TAG, "Publish error.");
-                                            break;
-                                    }
-                                }
-                            }, null);
-                        }
-                    }
-                });
-
-            } catch (final Exception e) {
-                Log.e(TAG, "Connection error.", e);
-            }
+            final String url = "http://";
+            //String name = "Guy";
+            ShowNewPersonDialog(MessagesActivity.this);
+            /*
+            String name = textReturned;
+            if(name!="")
+                sendMqttMessage(topic, msg ,name ,url);
+            else
+                sendMqttMessage(topic, msg);
+            */
         }
     };
 
     private View.OnClickListener RejectClick = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+
+
             final String topic = "nssl";
             final String msg = "Don't Open";
             //open connection
-            try {
-//                mqttManager.connect(AWSMobileClient.getInstance(), new AWSIotMqttClientStatusCallback() { // Doesn't work, stuck on reconnecting
-                mqttManager.connect(clientKeyStore, new AWSIotMqttClientStatusCallback() {
-                    @Override
-                    public void onStatusChanged(final AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus status,
-                                                final Throwable throwable) {
-                        Log.d(TAG, "Status = " + String.valueOf(status));
-                        if (status == AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.Connected) {
-                            mqttManager.publishString(msg, topic, AWSIotMqttQos.QOS0, new AWSIotMqttMessageDeliveryCallback() {
-                                @Override
-                                public void statusChanged(MessageDeliveryStatus status, Object userData) {
-                                    switch (status) {
-                                        case Success:
-                                            try {
-                                                mqttManager.disconnect();
-                                            } catch (Exception e) {
-                                                Log.e(TAG, "Disconnect error.", e);
-                                            }
-                                            break;
-                                        case Fail:
-                                            Log.e(TAG, "Publish error.");
-                                            break;
-                                    }
-                                }
-                            }, null);
-                        }
-                    }
-                });
-
-            } catch (final Exception e) {
-                Log.e(TAG, "Connection error.", e);
-            }
+            sendMqttMessage(topic, msg);
         }
     };
 
@@ -238,40 +226,52 @@ public class MessagesActivity extends AppCompatActivity {
             final String topic = "nssl";
             final String msg = "Start Video";
             //open connection
-            try {
-//                mqttManager.connect(AWSMobileClient.getInstance(), new AWSIotMqttClientStatusCallback() { // Doesn't work, stuck on reconnecting
-                mqttManager.connect(clientKeyStore, new AWSIotMqttClientStatusCallback() {
-                    @Override
-                    public void onStatusChanged(final AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus status,
-                                                final Throwable throwable) {
-                        Log.d(TAG, "Status = " + String.valueOf(status));
-                        if (status == AWSIotMqttClientStatusCallback.AWSIotMqttClientStatus.Connected) {
-                            mqttManager.publishString(msg, topic, AWSIotMqttQos.QOS0, new AWSIotMqttMessageDeliveryCallback() {
-                                @Override
-                                public void statusChanged(MessageDeliveryStatus status, Object userData) {
-                                    switch (status) {
-                                        case Success:
-                                            try {
-                                                mqttManager.disconnect();
-                                            } catch (Exception e) {
-                                                Log.e(TAG, "Disconnect error.", e);
-                                            }
-                                            break;
-                                        case Fail:
-                                            Log.e(TAG, "Publish error.");
-                                            break;
-                                    }
-                                }
-                            }, null);
-                        }
-                    }
-                });
-
-            } catch (final Exception e) {
-                Log.e(TAG, "Connection error.", e);
-            }
+            sendMqttMessage(topic, msg);
         }
     };
+
+    private void showAddItemDialog(Context c) {
+        final EditText taskEditText = new EditText(c);
+        AlertDialog dialog = new AlertDialog.Builder(c)
+                .setTitle("Add a new person to DataBase")
+                .setMessage("Please Insert Person's Full Name")
+                .setView(taskEditText)
+                .setPositiveButton("Add", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String name = String.valueOf(taskEditText.getText());
+                        final String topic = "nssl";
+                        final String msg = "Open";
+                        final String url = "http://";
+                        sendMqttMessage(topic, msg ,name ,url);
+
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.show();
+    }
+
+    private void ShowNewPersonDialog(Context c) {
+        AlertDialog dialog = new AlertDialog.Builder(c)
+                .setTitle("Do you want to add this person?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        showAddItemDialog(c);
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String topic="nssl";
+                        String msg = "Open";
+                        sendMqttMessage(topic, msg);
+                    }
+                })
+                .create();
+        dialog.show();
+    }
 
 }
 
