@@ -38,10 +38,12 @@ public class FcmNotification {
     }
 
     private static NotificationCompat.Builder buildNotification(Map<String, String> data, Context context, String channel) {
+        String snapshotId = data.get("image_name");
+        String cameraName = data.get("camera_name");
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channel)
                 .setAutoCancel(true)
                 .setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("Unrecognized Person At Your Door @" + data.get("camera_name"));
+                .setContentTitle("Unrecognized Person At Your Door @" + cameraName);
 
         CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(
                 context.getApplicationContext(),
@@ -51,17 +53,25 @@ public class FcmNotification {
         AmazonS3Client s3Client = new AmazonS3Client(credentialsProvider);
         s3Client.setRegion(Region.getRegion(AppHelper.COGNITO_REGION));
 
-        S3Object s3Object = s3Client.getObject(AppHelper.S3_BUCKET_NAME, data.get("image_name"));
+        S3Object s3Object = s3Client.getObject(AppHelper.S3_BUCKET_NAME, snapshotId);
         Bitmap bmp = BitmapFactory.decodeStream(s3Object.getObjectContent());
         new NotificationCompat.BigPictureStyle().bigPicture(bmp).setBuilder(builder);
 
         Intent streamIntent = new Intent(context, StreamActivity.class);
-        String streamRoomName = AppHelper.getCurrUser() + data.get("camera_name");
-        streamIntent.putExtra(StreamActivity.ROOM_NAME, streamRoomName);
+        streamIntent.putExtra(StreamActivity.CAMERA_NAME, cameraName);
         builder.addAction(
                 android.R.drawable.presence_video_online,
                 "View Stream",
-                PendingIntent.getActivity(context, streamRoomName.hashCode(), streamIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntent.getActivity(context, cameraName.hashCode(), streamIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        );
+
+        Intent unlockIntent = new Intent(context, MessagesActivity.class);
+        unlockIntent.putExtra(MessagesActivity.CAMERA_NAME, cameraName);
+        unlockIntent.putExtra(MessagesActivity.SNAPSHOT_ID, snapshotId);
+        builder.addAction(
+                android.R.drawable.ic_menu_help,
+                "Unlock Door",
+                PendingIntent.getActivity(context, snapshotId.hashCode(), unlockIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         );
 
         // Add onClick behaviour.
