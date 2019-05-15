@@ -1,5 +1,6 @@
 package com.github.aamnony.smartdoorbell;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -7,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 
@@ -19,12 +21,12 @@ import java.util.Map;
 
 public class FcmNotification {
 
-    private static final int ID = 0xC2FF8;
-
     public static void post(Map<String, String> data, Context context) {
-        NotificationCompat.Builder builder = buildNotification(data, context, createChannel(context));
+        int notificationId = ("SmartDoorbell:" + AppHelper.getCurrUser() + "/" + data.get("camera_name")).hashCode();
+        NotificationCompat.Builder builder = buildNotification(data, context, createChannel(context), notificationId);
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        notificationManager.notify(data.hashCode(), builder.build());
+        notificationManager.cancel(notificationId);
+        notificationManager.notify(notificationId, builder.build());
     }
 
     private static String createChannel(Context context) {
@@ -37,13 +39,14 @@ public class FcmNotification {
         return name;
     }
 
-    private static NotificationCompat.Builder buildNotification(Map<String, String> data, Context context, String channel) {
+    private static NotificationCompat.Builder buildNotification(Map<String, String> data, Context context, String channel, int notificationId) {
         String snapshotId = data.get("image_name");
         String cameraName = data.get("camera_name");
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channel)
                 .setAutoCancel(true)
                 .setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("Unrecognized Person At Your Door @" + cameraName);
+                .setContentTitle("Unrecognized Person At Your Door @" + cameraName)
+                .setDefaults(Notification.DEFAULT_ALL);
 
         CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(
                 context.getApplicationContext(),
@@ -59,23 +62,33 @@ public class FcmNotification {
 
         Intent streamIntent = new Intent(context, StreamActivity.class);
         streamIntent.putExtra(StreamActivity.CAMERA_NAME, cameraName);
+        streamIntent.putExtra(StreamActivity.NOTIFICATION_ID, notificationId);
         builder.addAction(
-                android.R.drawable.presence_video_online,
-                "View Stream",
-                PendingIntent.getActivity(context, cameraName.hashCode(), streamIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                android.R.drawable.ic_menu_camera,
+                context.getString(R.string.stream),
+                PendingIntent.getActivity(context, 0, streamIntent, PendingIntent.FLAG_ONE_SHOT)
         );
 
         Intent unlockIntent = new Intent(context, MessagesActivity.class);
         unlockIntent.putExtra(MessagesActivity.CAMERA_NAME, cameraName);
         unlockIntent.putExtra(MessagesActivity.SNAPSHOT_ID, snapshotId);
+        unlockIntent.putExtra(MessagesActivity.NOTIFICATION_ID, notificationId);
         builder.addAction(
-                android.R.drawable.ic_menu_help,
-                "Unlock Door",
-                PendingIntent.getActivity(context, snapshotId.hashCode(), unlockIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                android.R.drawable.ic_lock_lock,
+                context.getString(R.string.unlock),
+                PendingIntent.getActivity(context, 0, unlockIntent, PendingIntent.FLAG_ONE_SHOT)
         );
 
-        // Add onClick behaviour.
-//        builder.setContentIntent(PendingIntent.getActivity(context, ID, streamIntent, 0));
+        Intent unlockAndAddIntent = new Intent(context, MessagesActivity.class);
+        unlockAndAddIntent.putExtra(MessagesActivity.CAMERA_NAME, cameraName);
+        unlockAndAddIntent.putExtra(MessagesActivity.SNAPSHOT_ID, snapshotId);
+        unlockAndAddIntent.putExtra(MessagesActivity.ADD, true);
+        unlockAndAddIntent.putExtra(MessagesActivity.NOTIFICATION_ID, notificationId);
+        builder.addAction(
+                android.R.drawable.ic_menu_add,
+                context.getString(R.string.unlock_and_add),
+                PendingIntent.getActivity(context, 0, unlockAndAddIntent, PendingIntent.FLAG_ONE_SHOT)
+        );
 
         return builder;
     }

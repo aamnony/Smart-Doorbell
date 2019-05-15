@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">Smart Doorbell</string>
     <string name="title_activity_log">Log</string>
-    <string name="title_activity_messages">Messages</string>
+    <string name="title_activity_messages">Actions</string>
+    <string name="title_activity_menu">Smart Doorbell</string>
+    <string name="actions">Actions</string>
+    <string name="log">Log</string>
+    <string name="unlock">Unlock</string>
+    <string name="stream">View Stream</string>
+    <string name="unlock_and_add"><![CDATA[Unlock & Add]]></string>
 </resources>

@@ -10,51 +10,17 @@
         android:layout_height="wrap_content"
         app:title="@string/title_activity_messages" />
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <Button
+        android:text="@string/unlock"
+        android:layout_gravity="center_horizontal"
+        android:id="@+id/btnUnlock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="71dp"
-            android:layout_marginEnd="13dp"
-            android:text="Unknown person just ringed the bell"
-            android:textSize="20dp" />
-
-
-        <Button
-            android:id="@+id/btnAccept"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="146dp"
-            android:layout_marginTop="141dp"
-            android:text="Accept" />
-
-
-        <Button
-            android:id="@+id/btnReject"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="224dp"
-            android:layout_marginEnd="135dp"
-            android:text="Reject" />
-
-
-        <Button
-            android:id="@+id/btnVideo"
-            android:layout_width="139dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="325dp"
-            android:layout_marginEnd="109dp"
-            android:text="See Camera" />
-    </RelativeLayout>
+    <Button
+        android:text="@string/stream"
+        android:layout_gravity="center_horizontal"
+        android:id="@+id/btnStream"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 </LinearLayout>
