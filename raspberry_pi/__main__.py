@@ -19,6 +19,8 @@ import gi
 gi.require_version('Wnck','3.0')
 from gi.repository import Wnck
 
+from pynput import keyboard
+
 
 # Device Parameters:
 USER_NAME                   = 'nssl'
@@ -27,7 +29,7 @@ SHOW_CAMERA_WINDOW          = True
 DEFAULT_UNLOCK_DURATION     = 5
 STREAM_KEEP_ALIVE_TIMEOUT   = 10
 FRAMES_WITH_FACES_THRESHOLD = 10
-LOG_LEVEL                   = 2  # Lower value means more verbose messages will be displayed
+LOG_LEVEL                   = 1  # Lower value means more verbose messages will be displayed
 
 # Framework Parameters:
 BUCKET_NAME                     = 'smartdoorbellfaces'
@@ -46,12 +48,13 @@ ROOM_URL                        = STREAM_SERVER_URL + USER_NAME + CAMERA_NAME
 DB_LOG_TABLE_NAME               = 'SmartDoorbellLogTable'
 ACTION_UNLOCK_DOOR              = 'open'
 ACTION_STREAM                   = 'stream'
+ACTION_RING                     = 'ring'
 ACTION_INDEX_FACE               = 'index face'
 
 
 def log(*values: any, level: int = LOG_LEVEL) -> None:
     if level >= LOG_LEVEL:
-        print('<', USER_NAME, '/', CAMERA_NAME, '> ', *values, sep='', flush=True)
+        print('<', USER_NAME, '/', CAMERA_NAME, '> ', *values, sep='', flush=False)
 
 
 class ChromiumBrowser:
@@ -60,27 +63,26 @@ class ChromiumBrowser:
         self.launch_time = 6
 
     def open_room(self) -> None:
-        if self.process is not None:
-            raise RuntimeError('Chromium Browser is already opened')
+        if self.process is None:
+            # https://stackoverflow.com/questions/45426203/minimize-window-with-python
+            self.process = subprocess.Popen(['chromium-browser', '--window-size=10,10', '--app=' + ROOM_URL], shell=False)
 
-        # https://stackoverflow.com/questions/45426203/minimize-window-with-python
-        self.process = subprocess.Popen(['chromium-browser', '--window-size=10,10', ROOM_URL], shell=False)
-
-        screen = Wnck.Screen.get_default()
-        time.sleep(self.launch_time)
-        screen.force_update()
-        windows = screen.get_windows()
-        for w in windows:
-            #if 'chromium' in w.get_name().lower():
-            if self.process.pid == w.get_pid():
-                w.minimize()
-        log('Opened room ', level=0)
+            screen = Wnck.Screen.get_default()
+            time.sleep(self.launch_time)
+            screen.force_update()
+            windows = screen.get_windows()
+            for w in windows:
+                #if 'chromium' in w.get_name().lower():
+                if self.process.pid == w.get_pid():
+                    w.minimize()
+            log('Opened room ', level=0)
 
     def close_room(self) -> None:
         self.process.kill()
         self.process.wait()
         self.process = None
         log('Closed room ', level=0)
+
 
 class Messaging:
     @staticmethod
@@ -169,6 +171,7 @@ class FaceRecognition:
         )
         
         log('Indexing face from bucket/', recognized_image_name, level=1)
+        rekognition = boto3.client('rekognition')
         response = rekognition.index_faces(
                 CollectionId=REKOGNITION_COLLECTION_ID,
                 Image={
@@ -184,7 +187,7 @@ class FaceRecognition:
 class Db:
     @staticmethod
     def log_action(action_type: str, person_name: str = 'null', image_name: str = 'null') -> None:
-        log(f'Logging action: "{action_type}"', level=1)
+        log('Logging action: "{action_type}"'.format(action_type=action_type), level=1)
         dynamodb = boto3.client('dynamodb')
         item = dynamodb.put_item(
             TableName=DB_LOG_TABLE_NAME,
@@ -242,6 +245,7 @@ class StateMachine:
         self.state = self.FACE_DETECTING
         self.received_stream_request = False
         self.received_open_request = False
+        self.received_ring_request = False
         self.last_stream_request_time = 0
         self.frames_with_faces = 0
 
@@ -261,6 +265,10 @@ class StateMachine:
 
         self.mqtt_client.connect()
         self.mqtt_client.subscribe(USER_NAME + '/' + CAMERA_NAME, 1, self.on_message_received)
+
+        self.ring_listener = keyboard.Listener(on_press=self.on_ring)
+        self.ring_listener.start()
+        
         log('Ready')
         while True:
             self.step()
@@ -273,6 +281,7 @@ class StateMachine:
         if not self.camera.isOpened():
             self.camera.open(0)
             log('Opened camera', level=0)
+            time.sleep(0.5)
 
     def goto_streaming(self) -> None:
         log('Start streaming', level=2)
@@ -281,11 +290,12 @@ class StateMachine:
         if self.camera.isOpened():
             self.camera.release()
             log('Closed camera', level=0)
+            time.sleep(0.5)
         self.chromium_browser.open_room()
 
     def on_message_received(self, client, userdata, message) -> None:
         action = str(message.payload.decode('utf-8'))
-        log(action, level=1)
+        log(action, level=0)
         action = action.split()
         if action[0] == ACTION_UNLOCK_DOOR:
             self.received_open_request = True
@@ -295,6 +305,13 @@ class StateMachine:
         elif action[0] == ACTION_STREAM:
             self.received_stream_request = True
             self.last_stream_request_time = time.time()
+
+    def on_ring(self, key) -> None:
+        try:
+            if key.char == 'r':
+                self.received_ring_request = True
+        except AttributeError:
+            pass
 
     def step(self) -> None:
         if self.received_open_request:
@@ -317,6 +334,18 @@ class StateMachine:
 
             rc, image = self.camera.read()
             image = cv2.resize(image, (320, 240))
+            if self.received_ring_request:
+                _, encoded_image = cv2.imencode(IMAGE_EXTENSION, image)
+
+                image_bytes = encoded_image.tobytes()
+                image_name = LOG_FACES_BUCKET_FOLDER + str(time.time()) + IMAGE_EXTENSION
+                FaceRecognition.upload_image(image_bytes, image_name)
+                
+                Messaging.publish_message(image_name)
+                Db.log_action(ACTION_RING, image_name=image_name)
+                self.received_ring_request = False
+                return
+            
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             faces = self.face_cascade.detectMultiScale(gray, 1.15, 3)
 
@@ -343,8 +372,6 @@ class StateMachine:
                 if person_name is not None:
                     Db.log_action(ACTION_UNLOCK_DOOR, person_name, image_name)
                     Door.unlock()
-                else:
-                    Messaging.publish_message(image_name)
 
                 self.camera.open(0)
                 self.frames_with_faces = 0
