@@ -10,7 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-public class MessagesActivity extends AppCompatActivity {
+public class MessagesActivity1 extends AppCompatActivity {
     public static final String ADD = "add";
     public static final String SNAPSHOT_ID = "snapshot_id";
     public static final String CAMERA_NAME = "camera_name";
@@ -58,7 +58,7 @@ public class MessagesActivity extends AppCompatActivity {
     private View.OnClickListener onUnlockClicked = v -> mqtt.sendMessage(AppHelper.getCurrUser() + "/" + cameraName, Mqtt.ACTION_UNLOCK_DOOR);
 
     private View.OnClickListener onStreamClicked = v -> {
-        Intent streamIntent = new Intent(MessagesActivity.this, StreamActivity.class);
+        Intent streamIntent = new Intent(MessagesActivity1.this, StreamActivity.class);
         streamIntent.putExtra(StreamActivity.CAMERA_NAME, cameraName);
         startActivity(streamIntent);
     };

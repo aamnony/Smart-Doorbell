@@ -66,28 +66,29 @@ public class FcmNotification {
         builder.addAction(
                 android.R.drawable.ic_menu_camera,
                 context.getString(R.string.stream),
-                PendingIntent.getActivity(context, 0, streamIntent, PendingIntent.FLAG_ONE_SHOT)
+                PendingIntent.getActivity(context, 0, streamIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         );
 
-        Intent unlockIntent = new Intent(context, MessagesActivity.class);
+        Intent unlockIntent = new Intent(context, MessagesActivity1.class);
         unlockIntent.putExtra(MessagesActivity.CAMERA_NAME, cameraName);
         unlockIntent.putExtra(MessagesActivity.SNAPSHOT_ID, snapshotId);
+        unlockIntent.putExtra(MessagesActivity.ADD, "0");
         unlockIntent.putExtra(MessagesActivity.NOTIFICATION_ID, notificationId);
         builder.addAction(
                 android.R.drawable.ic_lock_lock,
                 context.getString(R.string.unlock),
-                PendingIntent.getActivity(context, 0, unlockIntent, PendingIntent.FLAG_ONE_SHOT)
+                PendingIntent.getActivity(context, 0, unlockIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         );
 
         Intent unlockAndAddIntent = new Intent(context, MessagesActivity.class);
         unlockAndAddIntent.putExtra(MessagesActivity.CAMERA_NAME, cameraName);
         unlockAndAddIntent.putExtra(MessagesActivity.SNAPSHOT_ID, snapshotId);
-        unlockAndAddIntent.putExtra(MessagesActivity.ADD, true);
+        unlockAndAddIntent.putExtra(MessagesActivity.ADD, "1");
         unlockAndAddIntent.putExtra(MessagesActivity.NOTIFICATION_ID, notificationId);
         builder.addAction(
                 android.R.drawable.ic_menu_add,
                 context.getString(R.string.unlock_and_add),
-                PendingIntent.getActivity(context, 0, unlockAndAddIntent, PendingIntent.FLAG_ONE_SHOT)
+                PendingIntent.getActivity(context, 0, unlockAndAddIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         );
 
         return builder;

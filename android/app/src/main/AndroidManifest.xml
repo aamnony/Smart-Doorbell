@@ -24,6 +24,9 @@
             android:name=".MessagesActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".MessagesActivity1"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".LogActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
