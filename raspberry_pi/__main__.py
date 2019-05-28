@@ -21,6 +21,8 @@ from gi.repository import Wnck
 
 from pynput import keyboard
 
+import RPi.GPIO
+
 
 # Device Parameters:
 USER_NAME                   = 'nssl'
@@ -30,6 +32,8 @@ DEFAULT_UNLOCK_DURATION     = 5
 STREAM_KEEP_ALIVE_TIMEOUT   = 10
 FRAMES_WITH_FACES_THRESHOLD = 10
 LOG_LEVEL                   = 1  # Lower value means more verbose messages will be displayed
+LOCK_PIN_NUMBER             = 26
+BELL_PIN_NUMBER             = 19
 
 # Framework Parameters:
 BUCKET_NAME                     = 'smartdoorbellfaces'
@@ -212,13 +216,23 @@ class Db:
 
 
 class Door:
+    @staticmethod
+    def init() -> None:
+        RPi.GPIO.setmode(RPi.GPIO.BCM)
+        RPi.GPIO.setup(LOCK_PIN_NUMBER, RPi.GPIO.OUT)
+        RPi.GPIO.setup(BELL_PIN_NUMBER, RPi.GPIO.IN, pull_up_down=RPi.GPIO.PUD_DOWN)
+
+    @staticmethod
+    def destroy() -> None:
+        RPi.GPIO.cleanup()
+        
     @classmethod
     def unlock(cls, duration: int = DEFAULT_UNLOCK_DURATION) -> None:
         """
         Unlock the door for a given duration (in seconds).
         If the duration is non-positive, unlock the door indefinitely (until a lock command is sent).
         """
-        # TODO: send open to GPIO
+        RPi.GPIO.output(LOCK_PIN_NUMBER, RPi.GPIO.HIGH)
         log('Unlocking the door')
         if duration > 0:
             time.sleep(duration)
@@ -230,7 +244,7 @@ class Door:
         Lock the door for a given duration (in seconds).
         If the duration is non-positive, lock the door indefinitely (until an unlock command is sent).
         """
-        # TODO: send close to GPIO
+        RPi.GPIO.output(LOCK_PIN_NUMBER, RPi.GPIO.LOW)
         log('Locking the door')
         if duration > 0:
             time.sleep(duration)
@@ -256,6 +270,7 @@ class StateMachine:
 
         self.mqtt_client = Messaging.get_mqtt_client()
         Messaging.init_fcm()
+        Door.init()
 
     def run(self) -> None:
         if SHOW_CAMERA_WINDOW:
@@ -266,8 +281,7 @@ class StateMachine:
         self.mqtt_client.connect()
         self.mqtt_client.subscribe(USER_NAME + '/' + CAMERA_NAME, 1, self.on_message_received)
 
-        self.ring_listener = keyboard.Listener(on_press=self.on_ring)
-        self.ring_listener.start()
+        RPi.GPIO.add_event_detect(BELL_PIN_NUMBER, RPi.GPIO.RISING, callback=self.on_ring, bouncetime=300)
         
         log('Ready')
         while True:
@@ -306,12 +320,9 @@ class StateMachine:
             self.received_stream_request = True
             self.last_stream_request_time = time.time()
 
-    def on_ring(self, key) -> None:
-        try:
-            if key.char == 'r':
-                self.received_ring_request = True
-        except AttributeError:
-            pass
+    def on_ring(self, channel) -> None:
+        if RPi.GPIO.input(BELL_PIN_NUMBER) == RPi.GPIO.HIGH:
+            self.received_ring_request = True
 
     def step(self) -> None:
         if self.received_open_request:
@@ -377,5 +388,9 @@ class StateMachine:
                 self.frames_with_faces = 0
 
 
-
-StateMachine().run()
+try:
+    StateMachine().run()
+except KeyboardInterrupt:
+    Door.destroy()
+    log('Exiting')
+    
