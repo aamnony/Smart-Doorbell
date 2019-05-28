@@ -304,7 +304,7 @@ class StateMachine:
         if self.camera.isOpened():
             self.camera.release()
             log('Closed camera', level=0)
-            time.sleep(0.5)
+            time.sleep(3)
         self.chromium_browser.open_room()
 
     def on_message_received(self, client, userdata, message) -> None:
