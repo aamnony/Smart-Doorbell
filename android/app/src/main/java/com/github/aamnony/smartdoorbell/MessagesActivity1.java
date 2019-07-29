@@ -42,13 +42,13 @@ public class MessagesActivity1 extends AppCompatActivity {
         }
         snapshotId = getIntent().getStringExtra(SNAPSHOT_ID);
         if (snapshotId != null) {
-            Toast.makeText(this, "snapshotID=" + snapshotId, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "snapshotID=" + snapshotId, Toast.LENGTH_SHORT).show();
             String add = getIntent().getStringExtra(ADD);
             if (add.equals("1")) {
-                Toast.makeText(this, "ADD = TRUE", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "ADD = TRUE", Toast.LENGTH_SHORT).show();
                 showAddPersonDialog();
             } else {
-                Toast.makeText(this, add, Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, add, Toast.LENGTH_SHORT).show();
                 mqtt.sendMessage(AppHelper.getCurrUser() + "/" + cameraName, Mqtt.ACTION_UNLOCK_DOOR);
 //                finish();
             }

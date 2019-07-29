@@ -2,9 +2,9 @@
 <resources>
 
     <style name="AppTheme" parent="Theme.AppCompat">
-        <item name="colorPrimary">#123123</item>
-        <item name="colorPrimaryDark">#123123</item>
-        <item name="colorAccent">#432432</item>
+        <item name="colorPrimary">#304ffe</item>
+        <item name="colorPrimaryDark">#311b92</item>
+        <item name="colorAccent">#536dfe</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
